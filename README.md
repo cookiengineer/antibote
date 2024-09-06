@@ -37,7 +37,7 @@ echo "My-Personal-Access-Token" > github/Token.env;
 # Start tracing the botnet behind fake user account
 go run cmds/antibote/main.go xiexinch;
 
-# GPG key for this botnet was: B5690EEEBB952194
+# GPG key for this botnet operator was: B5690EEEBB952194
 cat ~/Antibote/github/xiexinch.json;
 cat ~/Antibote/keymap.json;
 ```
