@@ -1,20 +1,20 @@
 package github
 
 import "antibote/structs"
-import "antibote/github/api"
+import "antibote/types"
 import "encoding/json"
 import "strconv"
 
-func GetStargazers(user string, repo string) []api.User {
+func GetStargazers(cache *structs.Cache, user string, repo string) []types.User {
 
-	scraper := structs.NewScraper(1)
+	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
 		"Token": Token,
 		"User-Agent": "antibote (Bot Detector)",
 	}
 
-	users := make([]api.User, 0)
+	users := make([]types.User, 0)
 	buffer := scraper.Request("https://api.github.com/repos/" + user + "/" + repo + "/stargazers?page=1")
 	err := json.Unmarshal(buffer, &users)
 
@@ -22,9 +22,8 @@ func GetStargazers(user string, repo string) []api.User {
 
 		for p := 2; p <= 50; p++ {
 
-			var page = strconv.Itoa(p)
-			var page_users []api.User
-
+			page := strconv.Itoa(p)
+			page_users := make([]types.User, 0)
 			page_buffer := scraper.Request("https://api.github.com/repos/" + user + "/" + repo + "/stargazers?page=" + page)
 
 			if len(page_buffer) > 0 {

@@ -1,4 +1,4 @@
-package api
+package types
 
 type Commit struct {
 	Hash string `json:"sha"`

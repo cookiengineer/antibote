@@ -7,7 +7,7 @@ import "strconv"
 import "strings"
 import "time"
 
-var CONTENT_TYPES []string = []string{
+var content_types []string = []string{
 	"application/gzip",
 	"application/json",
 	"application/ld+json",
@@ -30,6 +30,7 @@ type ScraperTask struct {
 }
 
 type Scraper struct {
+	Cache     *Cache
 	Busy      bool
 	Limit     int
 	Tasks     []ScraperTask
@@ -60,10 +61,8 @@ func processRequests(scraper *Scraper) {
 
 		for f := 0; f < len(filtered); f++ {
 
-			var task = filtered[f]
-
+			task := filtered[f]
 			buffer := scraper.Request(task.Url)
-
 			task.Callback(buffer)
 
 		}
@@ -82,7 +81,7 @@ func processRequests(scraper *Scraper) {
 
 			} else {
 
-				time.AfterFunc(30*time.Second, func() {
+				time.AfterFunc(1*time.Second, func() {
 					processRequests(scraper)
 				})
 
@@ -98,7 +97,7 @@ func processRequests(scraper *Scraper) {
 
 }
 
-func NewScraper(limit int) Scraper {
+func NewScraper(cache *Cache, limit int) Scraper {
 
 	if limit <= 0 {
 		limit = 1
@@ -106,6 +105,7 @@ func NewScraper(limit int) Scraper {
 
 	var scraper Scraper
 
+	scraper.Cache = cache
 	scraper.Busy = false
 	scraper.Limit = limit
 	scraper.Tasks = make([]ScraperTask, 0)
@@ -141,48 +141,56 @@ func (scraper *Scraper) Request(url string) []byte {
 	var content_type string
 	var status_code int
 
-	client := &http.Client{}
-	client.CloseIdleConnections()
+	if scraper.Cache.HasDownload(url) {
 
-	request, err1 := http.NewRequest("GET", url, nil)
+		buffer = scraper.Cache.ReadDownload(url)
 
-	if err1 == nil {
+	} else {
 
-		for key, val := range scraper.Headers {
-			request.Header.Set(key, val)
-		}
+		client := &http.Client{}
+		client.CloseIdleConnections()
 
-		response, err2 := client.Do(request)
+		request, err1 := http.NewRequest("GET", url, nil)
 
-		if err2 == nil {
+		if err1 == nil {
 
-			status_code = response.StatusCode
+			for key, val := range scraper.Headers {
+				request.Header.Set(key, val)
+			}
 
-			if status_code == 200 || status_code == 304 {
+			response, err2 := client.Do(request)
 
-				if len(response.Header["Content-Type"]) > 0 {
-					content_type = response.Header["Content-Type"][0]
-				} else {
-					content_type = "application/octet-stream"
-				}
+			if err2 == nil {
 
-				var valid bool = false
+				status_code = response.StatusCode
 
-				for c := 0; c < len(CONTENT_TYPES); c++ {
+				if status_code == 200 || status_code == 304 {
 
-					if strings.Contains(content_type, CONTENT_TYPES[c]) {
-						valid = true
-						break
+					if len(response.Header["Content-Type"]) > 0 {
+						content_type = response.Header["Content-Type"][0]
+					} else {
+						content_type = "application/octet-stream"
 					}
 
-				}
+					var valid bool = false
 
-				if valid == true {
+					for c := 0; c < len(content_types); c++ {
 
-					data, err2 := ioutil.ReadAll(response.Body)
+						if strings.Contains(content_type, content_types[c]) {
+							valid = true
+							break
+						}
 
-					if err2 == nil {
-						buffer = data
+					}
+
+					if valid == true {
+
+						data, err2 := ioutil.ReadAll(response.Body)
+
+						if err2 == nil {
+							buffer = data
+						}
+
 					}
 
 				}
@@ -191,22 +199,24 @@ func (scraper *Scraper) Request(url string) []byte {
 
 		}
 
-	}
+		if len(buffer) > 0 {
 
-	if len(buffer) > 0 {
+			scraper.Cache.WriteDownload(url, buffer)
 
-		fmt.Println("Request \"" + url + "\" succeeded")
+			fmt.Println("Request \"" + url + "\" succeeded")
 
-	} else {
+		} else {
 
-		fmt.Println("Request \"" + url + "\" failed")
+			fmt.Println("Request \"" + url + "\" failed")
 
-		if content_type != "" {
-			fmt.Println("Unsupported Content-Type \"" + content_type + "\"")
-		}
+			if content_type != "" {
+				fmt.Println("Unsupported Content-Type \"" + content_type + "\"")
+			}
 
-		if status_code != 0 {
-			fmt.Println("Unsupported Status Code \"" + strconv.Itoa(status_code) + "\"")
+			if status_code != 0 {
+				fmt.Println("Unsupported Status Code \"" + strconv.Itoa(status_code) + "\"")
+			}
+
 		}
 
 	}

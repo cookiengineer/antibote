@@ -1,20 +1,20 @@
 package github
 
 import "antibote/structs"
-import "antibote/github/api"
+import "antibote/types"
 import "encoding/json"
 import "strconv"
 
-func GetRepositories(user string) []api.Repository {
+func GetRepositories(cache *structs.Cache, user string) []types.Repository {
 
-	scraper := structs.NewScraper(1)
+	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
 		"Authorization": Token,
 		"User-Agent": "antibote (Bot Detector)",
 	}
 
-	repositories := make([]api.Repository, 0)
+	repositories := make([]types.Repository, 0)
 	buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=1")
 	err := json.Unmarshal(buffer, &repositories)
 
@@ -23,7 +23,7 @@ func GetRepositories(user string) []api.Repository {
 		for p := 2; p <= 10; p++ {
 
 			page := strconv.Itoa(p)
-			page_repositories := make([]api.Repository, 0)
+			page_repositories := make([]types.Repository, 0)
 			page_buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=" + page)
 
 			if len(page_buffer) > 0 {

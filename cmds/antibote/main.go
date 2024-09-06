@@ -6,6 +6,7 @@ import "fmt"
 import "os"
 import os_user "os/user"
 import "strings"
+import "time"
 
 func showHelp() {
 
@@ -45,8 +46,21 @@ func main() {
 	if home != "" {
 
 		cache := structs.NewCache(home + "/Antibote")
+		cache.Read()
 
-		actions.Scrape(&cache, user)
+		if !cache.IsCompletedTask(user) {
+			cache.AddTask(user)
+		}
+
+		users := cache.GetTasks()
+
+		for u := 0; u < len(users); u++ {
+
+			actions.Scrape(&cache, users[u])
+			time.Sleep(60 * time.Second)
+
+		}
+
 
 	}
 

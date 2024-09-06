@@ -1,14 +1,15 @@
 package structs
 
-import github "antibote/github/api"
+import "antibote/types"
 import "encoding/json"
 import "os"
 import "strings"
 
 type Cache struct {
-	Folder string                  `json:"folder"`
-	GitHub map[string]*github.User `json:"github"`
-	KeyMap map[string][]string     `json:"keymap"`
+	Folder  string                 `json:"folder"`
+	GitHub  map[string]*types.User `json:"github"`
+	KeyMap  map[string][]string    `json:"keymap"`
+	TaskMap map[string]string      `json:"taskmap"`
 }
 
 func NewCache(folder string) Cache {
@@ -19,23 +20,27 @@ func NewCache(folder string) Cache {
 		folder = folder[0 : len(folder)-1]
 	}
 
-	stat, err1 := os.Stat(folder + "/github")
+	stat, err1 := os.Stat(folder)
 
 	if err1 == nil && stat.IsDir() {
 
 		cache.Folder = folder
-		cache.GitHub = make(map[string]*github.User)
+		cache.GitHub = make(map[string]*types.User)
 		cache.KeyMap = make(map[string][]string, 0)
+		cache.TaskMap = make(map[string]string)
 
 	} else {
 
 		err2 := os.MkdirAll(folder, 0750)
+		err3 := os.MkdirAll(folder + "/github", 0750)
+		err4 := os.MkdirAll(folder + "/downloads", 0750)
 
-		if err2 == nil {
+		if err2 == nil && err3 == nil && err4 == nil {
 
 			cache.Folder = folder
-			cache.GitHub = make(map[string]*github.User)
+			cache.GitHub = make(map[string]*types.User)
 			cache.KeyMap = make(map[string][]string, 0)
+			cache.TaskMap = make(map[string]string)
 
 		}
 
@@ -68,109 +73,37 @@ func (cache *Cache) Read() {
 		}
 
 	}
-	// TODO: Read from filesystem
 
-}
+	buffer1, err1 := os.ReadFile(cache.Folder + "/keymap.json")
 
-func (cache *Cache) ReadUser(value string) bool {
-
-	var result bool = false
-
-	stat, err1 := os.Stat(cache.Folder + "/github/" + value + ".json")
-
-	if err1 == nil && !stat.IsDir() {
-
-		buffer, err2 := os.ReadFile(cache.Folder + "/github/" + value + ".json")
-
-		if err2 == nil {
-
-			var user github.User
-
-			err3 := json.Unmarshal(buffer, &user)
-
-			if err3 == nil {
-				cache.AddUser(&user)
-			}
-
-		}
-
+	if err1 == nil {
+		json.Unmarshal(buffer1, &cache.KeyMap)
 	}
 
-	return result
+	buffer2, err2 := os.ReadFile(cache.Folder + "/taskmap.json")
 
-}
-
-func (cache *Cache) AddUser(value *github.User) {
-
-	cache.GitHub[value.Name] = value
-
-	keys := value.ToKeys()
-
-	if len(keys) > 0 {
-
-		for k := 0; k < len(keys); k++ {
-
-			key := keys[k]
-
-			users, ok := cache.KeyMap[key]
-
-			if ok {
-
-				found := false
-
-				for u := 0; u < len(users); u++ {
-
-					if users[u] == value.Name {
-						found = true
-						break
-					}
-
-				}
-
-				if found == false {
-					cache.KeyMap[key] = append(cache.KeyMap[key], value.Name)
-				}
-
-			} else {
-				cache.KeyMap[key] = []string{value.Name}
-			}
-
-		}
-
+	if err2 == nil {
+		json.Unmarshal(buffer2, &cache.TaskMap)
 	}
-
-}
-
-func (cache *Cache) GetUser(value string) *github.User {
-
-	tmp, ok := cache.GitHub[value]
-
-	if ok {
-		return tmp
-	}
-
-	return nil
 
 }
 
 func (cache *Cache) Write() {
 
-	for name, user := range cache.GitHub {
-
-		file := cache.Folder + "/github/" + name + ".json"
-
-		buffer, err := json.MarshalIndent(user, "", "\t")
-
-		if err == nil {
-			os.WriteFile(file, buffer, 0666)
-		}
-
+	for name, _ := range cache.GitHub {
+		cache.WriteUser(name)
 	}
 
-	buffer, err := json.MarshalIndent(cache.KeyMap, "", "\t")
+	buffer1, err1 := json.MarshalIndent(cache.KeyMap, "", "\t")
 
-	if err == nil {
-		os.WriteFile(cache.Folder + "/keymap.json", buffer, 0666)
+	if err1 == nil {
+		os.WriteFile(cache.Folder + "/keymap.json", buffer1, 0666)
+	}
+
+	buffer2, err2 := json.MarshalIndent(cache.TaskMap, "", "\t")
+
+	if err2 == nil {
+		os.WriteFile(cache.Folder + "/taskmap.json", buffer2, 0666)
 	}
 
 }

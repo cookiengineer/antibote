@@ -1,4 +1,4 @@
-package api
+package types
 
 type Repository struct {
 	Identifier  uint64 `json:"id"`

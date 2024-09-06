@@ -1,58 +1,81 @@
 package actions
 
 import "antibote/github"
-import github_api "antibote/github/api"
 import "antibote/structs"
+import "antibote/types"
 import "fmt"
-
-var alreadyScraped map[string]bool
-
-func init() {
-	alreadyScraped = make(map[string]bool)
-}
 
 func Scrape(cache *structs.Cache, name string) {
 
-	_, ok := alreadyScraped[name]
-
-	if ok == false {
+	if !cache.IsCompletedTask(name) {
 
 		fmt.Println("Scrape user \"" + name + "\"")
 
 		user := cache.GetUser(name)
 
 		if user == nil {
-			tmp := github_api.NewUser(name)
+			tmp := types.NewUser(name)
 			user = &tmp
 		}
 
 		if user.Name != "" {
 
-			cache.AddUser(user)
+			cache.TrackUser(user)
 			cache.Write()
 
-			repositories := github.GetRepositories(user.Name)
+			if !cache.IsCompletedTask(user.Name + ":repositories") {
 
-			for r := 0; r < len(repositories); r++ {
+				repositories := github.GetRepositories(cache, user.Name)
 
-				repository := repositories[r]
+				if len(repositories) > 0 {
 
-				if repository.IsFork == false && user.HasRepository(repository.Name) == false {
+					for r := 0; r < len(repositories); r++ {
 
-					repository.Commits = github.GetCommits(user.Name, repository.Name)
-					user.AddRepository(repository)
+						repository := repositories[r]
+
+						if repository.IsFork == false && user.HasRepository(repository.Name) == false {
+
+							repository.Commits = github.GetCommits(cache, user.Name, repository.Name)
+							user.TrackRepository(&repository)
+
+						}
+
+					}
+
+					cache.CompleteTask(user.Name + ":repositories")
+					cache.Write()
 
 				}
 
 			}
 
-			alreadyScraped[user.Name] = true
+			if !cache.IsCompletedTask(user.Name + ":followers") {
+
+				followers := github.GetFollowers(cache, user.Name)
+
+				if len(followers) > 0 {
+
+					for f := 0; f < len(followers); f++ {
+						cache.AddTask(followers[f].Name)
+					}
+
+					cache.CompleteTask(user.Name + ":followers")
+					cache.Write()
+
+				}
+
+			}
+
+			keys := user.ToKeys()
+
+			for k := 0; k < len(keys); k++ {
+				cache.AddKey(keys[k].ID, keys[k].Email)
+			}
+
 			cache.Write()
 
-			followers := github.GetFollowers(user.Name)
-
-			for f := 0; f < len(followers); f++ {
-				Scrape(cache, followers[f].Name)
+			if len(user.Repositories) > 0 {
+				cache.CompleteTask(user.Name)
 			}
 
 		}

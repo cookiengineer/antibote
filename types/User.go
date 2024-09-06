@@ -1,4 +1,4 @@
-package api
+package types
 
 import "antibote/gpg"
 
@@ -62,8 +62,8 @@ func (user *User) AddEmail(value string) {
 
 }
 
-func (user *User) AddRepository(value Repository) {
-	user.Repositories[value.Name] = &value
+func (user *User) TrackRepository(value *Repository) {
+	user.Repositories[value.Name] = value
 }
 
 func (user *User) GetRepository(value string) *Repository {
@@ -90,15 +90,17 @@ func (user *User) HasRepository(value string) bool {
 
 }
 
-func (user *User) ToKeys() []string {
+func (user *User) ToKeys() []Key {
 
-	keymap := make(map[string]bool)
+	result := make([]Key, 0)
 
 	for _, repository := range user.Repositories {
 
 		for c := 0; c < len(repository.Commits); c++ {
 
 			commit := repository.Commits[c]
+			author := commit.Commit.Author.Name
+			email := commit.Commit.Author.Email
 			verification := commit.Commit.Verification
 
 			if verification.Verified == true && verification.Reason == "valid" {
@@ -106,7 +108,13 @@ func (user *User) ToKeys() []string {
 				keyid := gpg.ToKeyID(verification.Signature)
 
 				if keyid != "" {
-					keymap[keyid] = true
+
+					result = append(result, Key{
+						ID:    keyid,
+						Name:  author,
+						Email: email,
+					})
+
 				}
 
 			}
@@ -115,11 +123,6 @@ func (user *User) ToKeys() []string {
 
 	}
 
-	result := make([]string, 0)
-
-	for keyid, _ := range keymap {
-		result = append(result, keyid)
-	}
 
 	return result
 

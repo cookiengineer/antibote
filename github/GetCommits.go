@@ -1,20 +1,20 @@
 package github
 
 import "antibote/structs"
-import "antibote/github/api"
+import "antibote/types"
 import "encoding/json"
 import "strconv"
 
-func GetCommits(user string, repo string) []api.Commit {
+func GetCommits(cache *structs.Cache, user string, repo string) []types.Commit {
 
-	scraper := structs.NewScraper(1)
+	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
 		"Authorization": Token,
 		"User-Agent": "antibote (Bot Detector)",
 	}
 
-	commits := make([]api.Commit, 0)
+	commits := make([]types.Commit, 0)
 	buffer := scraper.Request("https://api.github.com/repos/" + user + "/" + repo + "/commits?page=1")
 	err := json.Unmarshal(buffer, &commits)
 
@@ -23,8 +23,7 @@ func GetCommits(user string, repo string) []api.Commit {
 		for p := 2; p <= 50; p++ {
 
 			page := strconv.Itoa(p)
-			page_commits := make([]api.Commit, 0)
-
+			page_commits := make([]types.Commit, 0)
 			page_buffer := scraper.Request("https://api.github.com/repos/" + user + "/" + repo + "/commits?page=" + page)
 
 			if len(page_buffer) > 0 {

@@ -1,20 +1,20 @@
 package github
 
 import "antibote/structs"
-import "antibote/github/api"
+import "antibote/types"
 import "encoding/json"
 import "strconv"
 
-func GetFollowers(user string) []api.User {
+func GetFollowers(cache *structs.Cache, user string) []types.User {
 
-	scraper := structs.NewScraper(1)
+	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
 		"Authorization": Token,
 		"User-Agent": "antibote (Bot Detector)",
 	}
 
-	followers := make([]api.User, 0)
+	followers := make([]types.User, 0)
 	buffer := scraper.Request("https://api.github.com/users/" + user + "/followers?page=1")
 	err := json.Unmarshal(buffer, &followers)
 
@@ -23,7 +23,7 @@ func GetFollowers(user string) []api.User {
 		for p := 2; p <= 50; p++ {
 
 			page := strconv.Itoa(p)
-			page_followers := make([]api.User, 0)
+			page_followers := make([]types.User, 0)
 			page_buffer := scraper.Request("https://api.github.com/users/" + user + "/followers?page=" + page)
 
 			if len(page_buffer) > 0 {
