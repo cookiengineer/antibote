@@ -167,4 +167,10 @@ func (cache *Cache) Write() {
 
 	}
 
+	buffer, err := json.MarshalIndent(cache.KeyMap, "", "\t")
+
+	if err == nil {
+		os.WriteFile(cache.Folder + "/keymap.json", buffer, 0666)
+	}
+
 }
