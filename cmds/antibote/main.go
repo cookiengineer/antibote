@@ -31,7 +31,13 @@ func main() {
 		user, err := os_user.Current()
 
 		if err == nil {
-			home = "/home/" + user.Username
+
+			if user.Username == "root" {
+				home = "/root"
+			} else {
+				home = "/home/" + user.Username
+			}
+
 		}
 
 	}
