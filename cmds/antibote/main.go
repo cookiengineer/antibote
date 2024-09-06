@@ -13,7 +13,7 @@ func showHelp() {
 	fmt.Println("antibote <github-username>")
 	fmt.Println("")
 	fmt.Println("Example:")
-	fmt.Println("    # creates recursive cache in ~/Antibote/github;")
+	fmt.Println("    # scrapes botnet accounts to ~/Antibote")
 	fmt.Println("    antibote name-of-doxxer;")
 
 }
@@ -27,7 +27,7 @@ func main() {
 		user = strings.TrimSpace(os.Args[1])
 	}
 
-	if home == "" && user != "" {
+	if home == "" {
 
 		user, err := os_user.Current()
 
@@ -43,7 +43,7 @@ func main() {
 
 	}
 
-	if home != "" {
+	if home != "" && user != "" {
 
 		cache := structs.NewCache(home + "/Antibote")
 		cache.Read()
@@ -61,6 +61,10 @@ func main() {
 
 		}
 
+	} else {
+
+		showHelp()
+		os.Exit(1)
 
 	}
 

@@ -1,5 +1,6 @@
 package types
 
+import "antibote/constants"
 import "antibote/gpg"
 
 type User struct {
@@ -107,7 +108,7 @@ func (user *User) ToKeys() []Key {
 
 				keyid := gpg.ToKeyID(verification.Signature)
 
-				if keyid != "" {
+				if keyid != "" && !constants.IsGitHubKey(keyid) {
 
 					result = append(result, Key{
 						ID:    keyid,

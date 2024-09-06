@@ -32,13 +32,21 @@ GitHub's very flawed bot detector.
 
 ```bash
 # Generate Personal Access Token
-echo "My-Personal-Access-Token" > github/Token.env;
+echo "My-Personal-Access-Token" > constants/Token.env;
 
 # Start tracing the botnet behind fake user account
 go run cmds/antibote/main.go xiexinch;
 
-# GPG key for this botnet operator was: B5690EEEBB952194
+# GPG key for this botnet operator is mapped in keymap
 cat ~/Antibote/github/xiexinch.json;
 cat ~/Antibote/keymap.json;
 ```
+
+
+## Notes
+
+The GitHub Web UI (Codespaces) uses GPG to sign its commits.
+
+In case you find another false positive or the key changes in the future, you will need
+to add it to the [GitHubKeys.go](constants/GitHubKeys.go) file.
 

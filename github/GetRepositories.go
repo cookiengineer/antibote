@@ -1,5 +1,6 @@
 package github
 
+import "antibote/constants"
 import "antibote/structs"
 import "antibote/types"
 import "encoding/json"
@@ -10,7 +11,7 @@ func GetRepositories(cache *structs.Cache, user string) []types.Repository {
 	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
-		"Authorization": Token,
+		"Authorization": constants.Token,
 		"User-Agent": "antibote (Bot Detector)",
 	}
 

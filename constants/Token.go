@@ -1,4 +1,4 @@
-package github
+package constants
 
 import _ "embed"
 import "strings"
