@@ -11,7 +11,7 @@ func GetStargazers(user string, repo string) []api.User {
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
 		"Token": Token,
-		"User-Agent": "git-identify (Cookie Engineer's Forensics Tools)",
+		"User-Agent": "antibote (Bot Detector)",
 	}
 
 	users := make([]api.User, 0)

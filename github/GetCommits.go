@@ -10,8 +10,8 @@ func GetCommits(user string, repo string) []api.Commit {
 	scraper := structs.NewScraper(1)
 	scraper.Headers = map[string]string{
 		"Accept": "application/json",
-		"Token": Token,
-		"User-Agent": "git-identify (Cookie Engineer's Forensics Tools)",
+		"Authorization": Token,
+		"User-Agent": "antibote (Bot Detector)",
 	}
 
 	commits := make([]api.Commit, 0)

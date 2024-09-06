@@ -19,7 +19,7 @@ func NewCache(folder string) Cache {
 		folder = folder[0 : len(folder)-1]
 	}
 
-	stat, err1 := os.Stat(folder)
+	stat, err1 := os.Stat(folder + "/github")
 
 	if err1 == nil && stat.IsDir() {
 
@@ -89,7 +89,7 @@ func (cache *Cache) ReadUser(value string) bool {
 			err3 := json.Unmarshal(buffer, &user)
 
 			if err3 == nil {
-				cache.AddUser(user)
+				cache.AddUser(&user)
 			}
 
 		}
@@ -100,9 +100,9 @@ func (cache *Cache) ReadUser(value string) bool {
 
 }
 
-func (cache *Cache) AddUser(value github.User) {
+func (cache *Cache) AddUser(value *github.User) {
 
-	cache.GitHub[value.Name] = &value
+	cache.GitHub[value.Name] = value
 
 	keys := value.ToKeys()
 

@@ -1,10 +1,11 @@
 package actions
 
 import "antibote/github"
+import github_api "antibote/github/api"
 import "antibote/structs"
 import "fmt"
 
-var alreadyScraped = map[string]bool
+var alreadyScraped map[string]bool
 
 func init() {
 	alreadyScraped = make(map[string]bool)
@@ -18,13 +19,17 @@ func Scrape(cache *structs.Cache, name string) {
 
 		fmt.Println("Scrape user \"" + name + "\"")
 
-		user = cache.GetUser(name)
+		user := cache.GetUser(name)
 
 		if user == nil {
-			user = github.GetUser(name)
+			tmp := github_api.NewUser(name)
+			user = &tmp
 		}
 
 		if user.Name != "" {
+
+			cache.AddUser(user)
+			cache.Write()
 
 			repositories := github.GetRepositories(user.Name)
 
@@ -42,13 +47,12 @@ func Scrape(cache *structs.Cache, name string) {
 			}
 
 			alreadyScraped[user.Name] = true
-			cache.AddUser(user)
 			cache.Write()
 
 			followers := github.GetFollowers(user.Name)
 
 			for f := 0; f < len(followers); f++ {
-				Scrape(followers[f].Name)
+				Scrape(cache, followers[f].Name)
 			}
 
 		}

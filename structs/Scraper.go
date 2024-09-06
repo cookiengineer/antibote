@@ -76,13 +76,13 @@ func processRequests(scraper *Scraper) {
 
 				fmt.Println(strconv.Itoa(len(scraper.Tasks)) + " Request Tasks left...")
 
-				time.AfterFunc(10*time.Second, func() {
+				time.AfterFunc(30*time.Second, func() {
 					processRequests(scraper)
 				})
 
 			} else {
 
-				time.AfterFunc(1*time.Second, func() {
+				time.AfterFunc(30*time.Second, func() {
 					processRequests(scraper)
 				})
 
@@ -195,11 +195,11 @@ func (scraper *Scraper) Request(url string) []byte {
 
 	if len(buffer) > 0 {
 
-		fmt.Println("Request \"" + url + "\"")
+		fmt.Println("Request \"" + url + "\" succeeded")
 
 	} else {
 
-		fmt.Println("Request \"" + url + "\"")
+		fmt.Println("Request \"" + url + "\" failed")
 
 		if content_type != "" {
 			fmt.Println("Unsupported Content-Type \"" + content_type + "\"")
