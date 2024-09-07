@@ -55,7 +55,7 @@ func GetCommits(cache *structs.Cache, user string, repo string) ([]types.Commit,
 
 		}
 
-	} else {
+	} else if len(buffer) == 0 {
 		err = errors.New("403 Unauthorized")
 	}
 

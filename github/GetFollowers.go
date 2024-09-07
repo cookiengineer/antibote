@@ -55,7 +55,7 @@ func GetFollowers(cache *structs.Cache, user string) ([]types.User, error) {
 
 		}
 
-	} else {
+	} else if len(buffer) == 0 {
 		err = errors.New("403 Unauthorized")
 	}
 

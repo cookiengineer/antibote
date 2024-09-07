@@ -55,7 +55,7 @@ func GetStargazers(cache *structs.Cache, user string, repo string) ([]types.User
 
 		}
 
-	} else {
+	} else if len(buffer) == 0 {
 		err = errors.New("403 Unauthorized")
 	}
 

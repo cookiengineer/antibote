@@ -60,7 +60,7 @@ func GetRepositories(cache *structs.Cache, user string) ([]types.Repository, err
 
 		}
 
-	} else {
+	} else if len(buffer) == 0 {
 		err = errors.New("403 Unauthorized")
 	}
 

@@ -1,5 +1,6 @@
 package structs
 
+import "fmt"
 import "os"
 import "path"
 import "strings"
@@ -24,6 +25,7 @@ func toFilePath(url string) string {
 		}
 
 		result = strings.Join(tmp2, "/")
+		result = strings.ReplaceAll(result, "?", ":")
 
 	}
 
@@ -64,6 +66,8 @@ func (cache *Cache) ReadDownload(url string) []byte {
 		if err1 == nil && !stat.IsDir() {
 
 			buffer, err2 := os.ReadFile(cache.Folder + "/" + file)
+
+			fmt.Println(cache.Folder + "/" + file, string(buffer))
 
 			if err2 == nil {
 				result = buffer

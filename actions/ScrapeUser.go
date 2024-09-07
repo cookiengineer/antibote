@@ -50,7 +50,19 @@ func ScrapeUser(cache *structs.Cache, name string) {
 				}
 
 				if err1 == nil && err2 == nil {
+
 					cache.CompleteTask(user.Name)
+
+				} else {
+
+					if err1 != nil {
+						fmt.Println("Get followers of " + user.Name + ": " + err1.Error())
+					}
+
+					if err2 != nil {
+						fmt.Println("Get repositories of " + user.Name + ": " + err2.Error())
+					}
+
 				}
 
 			}
