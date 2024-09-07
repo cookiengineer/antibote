@@ -14,5 +14,20 @@ type Repository struct {
 		Name       string `json:"login"`
 		Type       string `json:"type"`
 	} `json:"owner"`
-	Commits     []Commit `json:"commits"`
+	Commits     map[string]*Commit `json:"commits"`
+}
+
+func NewRepository(name string) Repository {
+
+	var repo Repository
+
+	repo.Name = name
+	repo.Commits = make(map[string]*Commit)
+
+	return repo
+
+}
+
+func (repo *Repository) AddCommit(commit Commit) {
+	repo.Commits[commit.Hash] = &commit
 }

@@ -85,8 +85,8 @@ func (cache *Cache) WriteDownload(url string, buffer []byte) bool {
 
 	if file != "" {
 
-		folder := path.Dir(file)
-		stat, err1 := os.Stat(cache.Folder + "/downloads/" + folder)
+		folder := path.Dir(cache.Folder + "/downloads/" + file)
+		stat, err1 := os.Stat(folder)
 
 		if err1 == nil && stat.IsDir() {
 
@@ -98,7 +98,7 @@ func (cache *Cache) WriteDownload(url string, buffer []byte) bool {
 
 		} else {
 
-			err2 := os.MkdirAll(cache.Folder + "/downloads/" + folder, 0755)
+			err2 := os.MkdirAll(folder, 0755)
 
 			if err2 == nil {
 

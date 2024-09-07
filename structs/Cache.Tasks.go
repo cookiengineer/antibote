@@ -7,7 +7,7 @@ func (cache *Cache) AddTask(value string) {
 	cache.TaskMap[value] = ""
 }
 
-func (cache *Cache) GetTasks() []string {
+func (cache *Cache) GetUserTasks() []string {
 
 	users := make(map[string]bool)
 
@@ -15,9 +15,33 @@ func (cache *Cache) GetTasks() []string {
 
 		if time == "" {
 
-			if strings.Contains(task, ":") {
-				users[task[0:strings.Index(task, ":")]] = true
-			} else {
+			if !strings.Contains(task, "/") {
+				users[task] = true
+			}
+
+		}
+
+	}
+
+	var result []string
+
+	for user, _ := range users {
+		result = append(result, user)
+	}
+
+	return result
+
+}
+
+func (cache *Cache) GetRepoTasks() []string {
+
+	users := make(map[string]bool)
+
+	for task, time := range cache.TaskMap {
+
+		if time == "" {
+
+			if strings.Contains(task, "/") {
 				users[task] = true
 			}
 

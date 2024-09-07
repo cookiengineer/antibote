@@ -97,9 +97,8 @@ func (user *User) ToKeys() []Key {
 
 	for _, repository := range user.Repositories {
 
-		for c := 0; c < len(repository.Commits); c++ {
+		for _, commit := range repository.Commits {
 
-			commit := repository.Commits[c]
 			author := commit.Commit.Author.Name
 			email := commit.Commit.Author.Email
 			verification := commit.Commit.Verification

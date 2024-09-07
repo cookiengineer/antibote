@@ -4,9 +4,12 @@ import "antibote/constants"
 import "antibote/structs"
 import "antibote/types"
 import "encoding/json"
+import "errors"
 import "strconv"
 
-func GetRepositories(cache *structs.Cache, user string) []types.Repository {
+func GetRepositories(cache *structs.Cache, user string) ([]types.Repository, error) {
+
+	var err error = nil
 
 	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
@@ -17,9 +20,9 @@ func GetRepositories(cache *structs.Cache, user string) []types.Repository {
 
 	repositories := make([]types.Repository, 0)
 	buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=1")
-	err := json.Unmarshal(buffer, &repositories)
+	err1 := json.Unmarshal(buffer, &repositories)
 
-	if err == nil && len(repositories) == 30 {
+	if err1 == nil && len(repositories) == 30 {
 
 		for p := 2; p <= 10; p++ {
 
@@ -29,12 +32,17 @@ func GetRepositories(cache *structs.Cache, user string) []types.Repository {
 
 			if len(page_buffer) > 0 {
 
-				err := json.Unmarshal(page_buffer, &page_repositories)
+				err2 := json.Unmarshal(page_buffer, &page_repositories)
 
-				if err == nil {
+				if err2 == nil {
 
 					for pr := 0; pr < len(page_repositories); pr++ {
-						repositories = append(repositories, page_repositories[pr])
+
+						repo := page_repositories[pr]
+						repo.Commits = make(map[string]*types.Commit)
+
+						repositories = append(repositories, repo)
+
 					}
 
 					if len(page_repositories) < 30 {
@@ -46,13 +54,16 @@ func GetRepositories(cache *structs.Cache, user string) []types.Repository {
 				}
 
 			} else {
+				err = errors.New("403 Unauthorized")
 				break
 			}
 
 		}
 
+	} else {
+		err = errors.New("403 Unauthorized")
 	}
 
-	return repositories
+	return repositories, err
 
 }

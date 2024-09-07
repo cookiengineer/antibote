@@ -4,9 +4,12 @@ import "antibote/constants"
 import "antibote/structs"
 import "antibote/types"
 import "encoding/json"
+import "errors"
 import "strconv"
 
-func GetFollowers(cache *structs.Cache, user string) []types.User {
+func GetFollowers(cache *structs.Cache, user string) ([]types.User, error) {
+
+	var err error = nil
 
 	scraper := structs.NewScraper(cache, 1)
 	scraper.Headers = map[string]string{
@@ -17,9 +20,9 @@ func GetFollowers(cache *structs.Cache, user string) []types.User {
 
 	followers := make([]types.User, 0)
 	buffer := scraper.Request("https://api.github.com/users/" + user + "/followers?page=1")
-	err := json.Unmarshal(buffer, &followers)
+	err1 := json.Unmarshal(buffer, &followers)
 
-	if err == nil && len(followers) == 30 {
+	if err1 == nil && len(followers) == 30 {
 
 		for p := 2; p <= 50; p++ {
 
@@ -29,9 +32,9 @@ func GetFollowers(cache *structs.Cache, user string) []types.User {
 
 			if len(page_buffer) > 0 {
 
-				err := json.Unmarshal(page_buffer, &page_followers)
+				err2 := json.Unmarshal(page_buffer, &page_followers)
 
-				if err == nil {
+				if err2 == nil {
 
 					for pf := 0; pf < len(page_followers); pf++ {
 						followers = append(followers, page_followers[pf])
@@ -45,12 +48,17 @@ func GetFollowers(cache *structs.Cache, user string) []types.User {
 					break
 				}
 
+			} else {
+				err = errors.New("403 Unauthorized")
+				break
 			}
 
 		}
 
+	} else {
+		err = errors.New("403 Unauthorized")
 	}
 
-	return followers
+	return followers, err
 
 }
