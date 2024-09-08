@@ -68,15 +68,7 @@ func (user *User) TrackRepository(value *Repository) {
 }
 
 func (user *User) GetRepository(value string) *Repository {
-
-	tmp, ok := user.Repositories[value]
-
-	if ok == true && tmp != nil {
-		return tmp
-	}
-
-	return nil
-
+	return user.Repositories[value]
 }
 
 func (user *User) HasRepository(value string) bool {

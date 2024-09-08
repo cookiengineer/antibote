@@ -1,82 +1,67 @@
 package actions
 
+import "antibote/console"
 import "antibote/github"
 import "antibote/structs"
-import "antibote/types"
-import "fmt"
 
-func ScrapeUser(cache *structs.Cache, name string) {
+func ScrapeUser(cache *structs.Cache, tasks *structs.Tasks, task *structs.Task, discover_recursive bool) error {
 
-	if !cache.IsCompletedTask(name) {
+	var err error = nil
 
-		fmt.Println("Scrape user \"" + name + "\"")
+	user := cache.GetUser(task.User)
 
-		user := cache.GetUser(name)
+	if user.Name != "" {
 
-		if user == nil {
-			tmp := types.NewUser(name)
-			user = &tmp
-		}
+		if task.Discover == true {
 
-		if user.Name != "" {
+			followers, err1 := github.GetFollowers(cache, user.Name)
 
-			cache.TrackUser(user)
-			cache.Write()
+			if err1 == nil {
 
-			if !cache.IsCompletedTask(user.Name) {
-
-				followers, err1 := github.GetFollowers(cache, user.Name)
-
-				if err1 == nil {
-
-					for f := 0; f < len(followers); f++ {
-						cache.AddTask(followers[f].Name)
-					}
-
-					cache.Write()
-
+				for f := 0; f < len(followers); f++ {
+					tasks.AddUser(followers[f].Name, discover_recursive)
 				}
 
-				repositories, err2 := github.GetRepositories(cache, user.Name)
+				cache.Write()
 
-				if err2 == nil {
-
-					for r := 0; r < len(repositories); r++ {
-						cache.AddTask(user.Name + "/" + repositories[r].Name)
-					}
-
-					cache.Write()
-
-				}
-
-				if err1 == nil && err2 == nil {
-
-					cache.CompleteTask(user.Name)
-
-				} else {
-
-					if err1 != nil {
-						fmt.Println("Get followers of " + user.Name + ": " + err1.Error())
-					}
-
-					if err2 != nil {
-						fmt.Println("Get repositories of " + user.Name + ": " + err2.Error())
-					}
-
-				}
-
+			} else {
+				console.Error("GetFollowers() error: " + err1.Error())
+				err = err1
 			}
 
-			keys := user.ToKeys()
+		}
 
-			for k := 0; k < len(keys); k++ {
-				cache.AddKey(keys[k].ID, keys[k].Email)
+		repositories, err2 := github.GetRepositories(cache, user.Name)
+
+		if err2 == nil {
+
+			for r := 0; r < len(repositories); r++ {
+
+				repository := repositories[r]
+
+				user.TrackRepository(&repository)
+
+				tasks.AddRepo(user.Name, repositories[r].Name, discover_recursive)
+
 			}
 
 			cache.Write()
 
+		} else {
+			console.Error("GetRepositories() error: " + err2.Error())
+			err = err2
 		}
+
+		keys := user.ToKeys()
+
+		for k := 0; k < len(keys); k++ {
+			cache.AddKey(keys[k].ID, keys[k].Email)
+		}
+
+		cache.Write()
 
 	}
+
+	return err
 
 }

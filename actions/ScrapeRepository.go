@@ -1,63 +1,53 @@
 package actions
 
+import "antibote/console"
 import "antibote/github"
 import "antibote/structs"
-import "antibote/types"
-import "fmt"
 
-func ScrapeRepository(cache *structs.Cache, username string, reponame string) {
+func ScrapeRepository(cache *structs.Cache, tasks *structs.Tasks, task *structs.Task, discover_recursive bool) error {
 
-	if !cache.IsCompletedTask(username + "/" + reponame) {
+	var err error = nil
 
-		fmt.Println("Scrape repo \"" + username + "/" + reponame + "\"")
+	user := cache.GetUser(task.User)
+	repository := user.GetRepository(task.Repo)
 
-		user := cache.GetUser(username)
+	if repository != nil && repository.IsFork == false {
 
-		if user == nil {
-			tmp := types.NewUser(username)
-			user = &tmp
-		}
+		if task.Discover == true {
 
-		if user.Name != "" {
+			stargazers, err1 := github.GetStargazers(cache, user.Name, repository.Name)
 
-			repository := user.GetRepository(reponame)
+			if err1 == nil {
 
-			if repository != nil && repository.IsFork == false {
-
-				stargazers, err1 := github.GetStargazers(cache, user.Name, repository.Name)
-
-				if err1 == nil {
-
-					for s := 0; s < len(stargazers); s++ {
-						cache.AddTask(stargazers[s].Name)
-					}
-
+				for s := 0; s < len(stargazers); s++ {
+					tasks.AddUser(stargazers[s].Name, discover_recursive)
 				}
 
-				commits, err2 := github.GetCommits(cache, user.Name, repository.Name)
-
-				if err2 == nil {
-
-					for c := 0; c < len(commits); c++ {
-						repository.AddCommit(commits[c])
-					}
-
-				}
-
-				user.TrackRepository(repository)
-				cache.Write()
-
-				if err1 == nil && err2 == nil {
-					cache.CompleteTask(user.Name + "/" + repository.Name)
-				}
-
+			} else {
+				console.Error("GetStargazers() error: " + err1.Error())
+				err = err1
 			}
 
-			cache.TrackUser(user)
-			cache.Write()
-
 		}
 
+		commits, err2 := github.GetCommits(cache, user.Name, repository.Name)
+
+		if err2 == nil {
+
+			for c := 0; c < len(commits); c++ {
+				repository.AddCommit(commits[c])
+			}
+
+		} else {
+			console.Error("GetCommits() error: " + err2.Error())
+			err = err2
+		}
+
+		user.TrackRepository(repository)
+		cache.Write()
+
 	}
+
+	return err
 
 }

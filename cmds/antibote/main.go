@@ -1,8 +1,8 @@
 package main
 
 import "antibote/actions"
+import "antibote/console"
 import "antibote/structs"
-import "fmt"
 import "os"
 import os_user "os/user"
 import "strconv"
@@ -11,13 +11,25 @@ import "time"
 
 func showHelp() {
 
-	fmt.Println("Usage:")
-	fmt.Println("    antibote \"username\"")
-	fmt.Println("    antibote \"username/project\"")
-	fmt.Println("")
-	fmt.Println("Example:")
-	fmt.Println("    # scrapes botnet accounts to ~/Antibote")
-	fmt.Println("    antibote name-of-doxxer;")
+	console.Info("Antibote")
+	console.Info("GitHub Botnet Discovery Tool")
+
+	console.Group("Usage:")
+	console.Log("    antibote \"username\"")
+	console.Log("    antibote \"username/project\"")
+	console.Log("")
+	console.GroupEnd("------")
+
+	console.Group("Examples:")
+	console.Log("    # scrapes followers to ~/Antibote")
+	console.Log("    antibote name-of-doxxer;")
+	console.Log("")
+	console.Log("    # scrapes followers/stagazers to ~/Antibote")
+	console.Log("    antibote name-of-doxxer/name-of-repo;")
+	console.Log("")
+	console.Log("    # scrapes remaining users and repos to ~/Antibote")
+	console.Log("    antibote;")
+	console.GroupEnd("---------")
 
 }
 
@@ -62,58 +74,99 @@ func main() {
 
 	}
 
-	if home != "" && user != "" {
+	if home != "" {
 
 		cache := structs.NewCache(home + "/Antibote")
+		tasks := structs.NewTasks()
 		cache.Read()
+
+		discover := true
 
 		if user != "" && repo != "" {
 
 			if !cache.IsCompletedTask(user) {
-				cache.AddTask(user)
+				tasks.AddUser(user, true)
 			}
 
 			if !cache.IsCompletedTask(user + "/" + repo) {
-				cache.AddTask(user + "/" + repo)
+				tasks.AddRepo(user, repo, true)
 			}
+
+			discover = false
 
 		} else if user != "" {
 
 			if !cache.IsCompletedTask(user) {
-				cache.AddTask(user)
+				tasks.AddUser(user, true)
+			}
+
+			discover = false
+
+		} else {
+
+			remaining := cache.RemainingTasks()
+
+			for r := 0; r < len(remaining); r++ {
+
+				tmp := remaining[r]
+
+				if strings.Contains(tmp, "/") {
+
+					user := tmp[0:strings.Index(tmp, "/")]
+					repo := tmp[strings.Index(tmp, "/")+1:]
+
+					tasks.AddRepo(user, repo, true)
+
+				} else {
+					tasks.AddUser(tmp, true)
+				}
+
 			}
 
 		}
 
-		user_tasks := cache.GetUserTasks()
+		if tasks.IsDone() {
 
-		for len(user_tasks) > 0 {
+			console.Info("No Remaining Tasks.")
 
-			for u := 0; u < len(user_tasks); u++ {
+		} else {
 
-				actions.ScrapeUser(&cache, user_tasks[u])
-				fmt.Println("Remaining Users: " + strconv.Itoa(len(user_tasks)))
-				time.Sleep(60 * time.Second)
+			for !tasks.IsDone() {
 
-			}
+				task := tasks.Next()
 
-			user_tasks = cache.GetUserTasks()
+				if task != nil {
 
-		}
+					console.Group("Task " + task.String())
 
-		repo_tasks := cache.GetRepoTasks()
+					var err error = nil
 
-		for len(repo_tasks) > 0 {
+					if task.Type == "user" {
+						err = actions.ScrapeUser(&cache, &tasks, task, discover)
+					} else if task.Type == "repo" {
+						err = actions.ScrapeRepository(&cache, &tasks, task, discover)
+					}
 
-			for r := 0; r < len(repo_tasks); r++ {
+					console.GroupEnd("")
 
-				user := repo_tasks[r][0:strings.Index(repo_tasks[r], "/")]
-				repo := repo_tasks[r][strings.Index(repo_tasks[r], "/")+1:]
+					remaining := tasks.Remaining()
 
-				actions.ScrapeRepository(&cache, user, repo)
+					if remaining > 0 {
+						console.Log("Remaining Tasks: " + strconv.Itoa(remaining))
+					}
 
-				fmt.Println("Remaining Repositories: " + strconv.Itoa(len(repo_tasks)))
-				time.Sleep(60 * time.Second)
+					if err != nil {
+						console.Warn("Rate limited by GitHub, waiting for 5 Minutes ...")
+						time.Sleep(5 * time.Minute)
+					} else {
+						cache.CompleteTask(task)
+						tasks.MarkComplete(task)
+						cache.Write()
+					}
+
+				} else {
+					break
+				}
 
 			}
 

@@ -22,40 +22,48 @@ func GetRepositories(cache *structs.Cache, user string) ([]types.Repository, err
 	buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=1")
 	err1 := json.Unmarshal(buffer, &repositories)
 
-	if err1 == nil && len(repositories) == 30 {
+	if err1 == nil {
 
-		for p := 2; p <= 10; p++ {
+		for r := 0; r < len(repositories); r++ {
+			repositories[r].Commits = make(map[string]*types.Commit)
+		}
 
-			page := strconv.Itoa(p)
-			page_repositories := make([]types.Repository, 0)
-			page_buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=" + page)
+		if len(repositories) == 30 {
 
-			if len(page_buffer) > 0 {
+			for p := 2; p <= 10; p++ {
 
-				err2 := json.Unmarshal(page_buffer, &page_repositories)
+				page := strconv.Itoa(p)
+				page_repositories := make([]types.Repository, 0)
+				page_buffer := scraper.Request("https://api.github.com/users/" + user + "/repos?page=" + page)
 
-				if err2 == nil {
+				if len(page_buffer) > 0 {
 
-					for pr := 0; pr < len(page_repositories); pr++ {
+					err2 := json.Unmarshal(page_buffer, &page_repositories)
 
-						repo := page_repositories[pr]
-						repo.Commits = make(map[string]*types.Commit)
+					if err2 == nil {
 
-						repositories = append(repositories, repo)
+						for pr := 0; pr < len(page_repositories); pr++ {
 
-					}
+							repo := page_repositories[pr]
+							repo.Commits = make(map[string]*types.Commit)
 
-					if len(page_repositories) < 30 {
+							repositories = append(repositories, repo)
+
+						}
+
+						if len(page_repositories) < 30 {
+							break
+						}
+
+					} else {
 						break
 					}
 
 				} else {
+					err = errors.New("403 Unauthorized")
 					break
 				}
 
-			} else {
-				err = errors.New("403 Unauthorized")
-				break
 			}
 
 		}

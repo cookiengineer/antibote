@@ -1,58 +1,21 @@
 package structs
 
-import "strings"
 import "time"
 
 func (cache *Cache) AddTask(value string) {
 	cache.TaskMap[value] = ""
 }
 
-func (cache *Cache) GetUserTasks() []string {
-
-	users := make(map[string]bool)
-
-	for task, time := range cache.TaskMap {
-
-		if time == "" {
-
-			if !strings.Contains(task, "/") {
-				users[task] = true
-			}
-
-		}
-
-	}
+func (cache *Cache) RemainingTasks() []string {
 
 	var result []string
 
-	for user, _ := range users {
-		result = append(result, user)
-	}
-
-	return result
-
-}
-
-func (cache *Cache) GetRepoTasks() []string {
-
-	users := make(map[string]bool)
-
-	for task, time := range cache.TaskMap {
+	for name, time := range cache.TaskMap {
 
 		if time == "" {
-
-			if strings.Contains(task, "/") {
-				users[task] = true
-			}
-
+			result = append(result, name)
 		}
 
-	}
-
-	var result []string
-
-	for user, _ := range users {
-		result = append(result, user)
 	}
 
 	return result
@@ -73,7 +36,13 @@ func (cache *Cache) IsCompletedTask(value string) bool {
 
 }
 
-func (cache *Cache) CompleteTask(value string) {
-	cache.TaskMap[value] = time.Now().Format(time.RFC3339)
+func (cache *Cache) CompleteTask(task *Task) {
+
+	if task.Type == "user" {
+		cache.TaskMap[task.User] = time.Now().Format(time.RFC3339)
+	} else if task.Type == "repo" {
+		cache.TaskMap[task.User + "/" + task.Repo] = time.Now().Format(time.RFC3339)
+	}
+
 }
 

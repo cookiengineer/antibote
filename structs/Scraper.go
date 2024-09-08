@@ -1,6 +1,6 @@
 package structs
 
-import "fmt"
+import "antibote/console"
 import "net/http"
 import "io/ioutil"
 import "strconv"
@@ -73,7 +73,7 @@ func processRequests(scraper *Scraper) {
 
 			if scraper.Throttled == true {
 
-				fmt.Println(strconv.Itoa(len(scraper.Tasks)) + " Request Tasks left...")
+				console.Log(strconv.Itoa(len(scraper.Tasks)) + " Request Tasks left...")
 
 				time.AfterFunc(30*time.Second, func() {
 					processRequests(scraper)
@@ -145,6 +145,11 @@ func (scraper *Scraper) Request(url string) []byte {
 
 		buffer = scraper.Cache.ReadDownload(url)
 
+		if len(buffer) > 0 {
+			content_type = "application/json"
+			status_code = 200
+		}
+
 	} else {
 
 		client := &http.Client{}
@@ -197,24 +202,26 @@ func (scraper *Scraper) Request(url string) []byte {
 
 			}
 
+			if len(buffer) > 0 {
+				scraper.Cache.WriteDownload(url, buffer)
+			}
+
 		}
 
 		if len(buffer) > 0 {
 
-			scraper.Cache.WriteDownload(url, buffer)
-
-			fmt.Println("Request \"" + url + "\" succeeded")
+			console.Log("Request \"" + url + "\" succeeded")
 
 		} else {
 
-			fmt.Println("Request \"" + url + "\" failed")
+			console.Error("Request \"" + url + "\" failed")
 
 			if content_type != "" {
-				fmt.Println("Unsupported Content-Type \"" + content_type + "\"")
+				console.Error("Unsupported Content-Type \"" + content_type + "\"")
 			}
 
 			if status_code != 0 {
-				fmt.Println("Unsupported Status Code \"" + strconv.Itoa(status_code) + "\"")
+				console.Error("Unsupported Status Code \"" + strconv.Itoa(status_code) + "\"")
 			}
 
 		}

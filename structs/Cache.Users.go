@@ -5,15 +5,7 @@ import "encoding/json"
 import "os"
 
 func (cache *Cache) GetUser(value string) *types.User {
-
-	tmp, ok := cache.GitHub[value]
-
-	if ok {
-		return tmp
-	}
-
-	return nil
-
+	return cache.GitHub[value]
 }
 
 func (cache *Cache) ReadUser(value string) bool {
@@ -32,8 +24,8 @@ func (cache *Cache) ReadUser(value string) bool {
 
 			err3 := json.Unmarshal(buffer, &user)
 
-			if err3 == nil {
-				cache.TrackUser(&user)
+			if err3 == nil && user.Name != "" {
+				cache.GitHub[user.Name] = &user
 			}
 
 		}
@@ -42,10 +34,6 @@ func (cache *Cache) ReadUser(value string) bool {
 
 	return result
 
-}
-
-func (cache *Cache) TrackUser(value *types.User) {
-	cache.GitHub[value.Name] = value
 }
 
 func (cache *Cache) WriteUser(value string) bool {
